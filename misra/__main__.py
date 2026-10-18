@@ -1,0 +1,100 @@
+"""misra: cross-checks a laptop's sensors with logic rules.
+
+  misra daemon                 watch: tick every 30 s and after every resume
+  misra once [--facts]         one tick, printed (no root: the EC is skipped)
+  misra solve FILE.lp...       run the rules over fact files
+  misra notify                 (as the desktop user) show new alerts
+  misra capture [REASON]       save a full snapshot now
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="misra", description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--state-dir", default=os.environ.get("MISRA_STATE", "/var/lib/misra"))
+    ap.add_argument("--run-dir", default=os.environ.get("MISRA_RUN", "/run/misra"))
+    ap.add_argument("--config", default=os.environ.get("MISRA_CONFIG", "/var/lib/misra/local.toml"))
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    d = sub.add_parser("daemon")
+    d.add_argument("--interval", type=int, default=30)
+    o = sub.add_parser("once")
+    o.add_argument("--facts", action="store_true", help="print the facts too")
+    s = sub.add_parser("solve")
+    s.add_argument("files", nargs="+")
+    sub.add_parser("notify")
+    c = sub.add_parser("capture")
+    c.add_argument("reason", nargs="?", default="manual")
+    a = ap.parse_args(argv)
+
+    if a.cmd == "solve":
+        from .reason import solve
+        facts = [Path(f).read_text() for f in a.files]
+        res = solve(facts)
+        print(f"% {res.models} optimal model(s), cost {res.cost}" + (" UNSAT" if res.unsat else ""))
+        for sym in sorted(res.certain, key=str):
+            print(sym)
+        if res.possible:
+            print("% possible:", " ".join(sorted(map(str, res.possible))))
+        return 0
+
+    if a.cmd == "notify":
+        return notify(a.run_dir)
+
+    from .daemon import Misra, deep_capture
+    root = os.geteuid() == 0
+    if a.cmd == "once":
+        tmp = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "misra-once"
+        m = Misra(state_dir=tmp, run_dir=tmp, config=a.config, use_ec=root)
+        facts, res, state = m.tick("once")
+        if a.facts:
+            print("\n".join(facts))
+            print()
+        print(json.dumps(state, indent=1))
+        return 0
+    if a.cmd == "capture":
+        d = Path(a.state_dir) / "snapshots" / f"{time.strftime('%Y%m%d-%H%M%S')}-deep-{a.reason}"
+        d.mkdir(parents=True, exist_ok=True)
+        deep_capture(d, {})
+        print(d)
+        return 0
+    if a.cmd == "daemon":
+        Misra(a.state_dir, a.run_dir, a.config, a.interval, use_ec=root).run()
+
+
+def notify(run_dir):
+    """Show alerts newer than the last one shown. Run by a path unit whenever
+    alerts.json changes."""
+    src = Path(run_dir) / "alerts.json"
+    seen_file = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "misra-seen"
+    try:
+        data = json.loads(src.read_text())
+    except (OSError, ValueError):
+        return 0
+    try:
+        seen = int(seen_file.read_text())
+    except (OSError, ValueError):
+        seen = 0
+    if data.get("seq", 0) < seen:          # the daemon restarted and counts from 1 again
+        seen = 0
+    for al in data.get("alerts", []):
+        if al["seq"] <= seen:
+            continue
+        subprocess.run(["notify-send", "-a", "misra", "-u", al.get("urgency", "normal"),
+                        al["title"], al.get("body", "")], check=False)
+        seen = al["seq"]
+    seen_file.parent.mkdir(parents=True, exist_ok=True)
+    seen_file.write_text(str(seen))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

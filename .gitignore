@@ -1,0 +1,9 @@
+__pycache__/
+*.egg-info/
+build/
+result
+result-*
+# Snapshots and local config hold serial numbers, network names and addresses.
+*.local.toml
+local.toml
+snapshots/
