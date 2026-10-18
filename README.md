@@ -44,6 +44,9 @@ like everything that goes through the ACPI firmware, can be blamed together.
 When two explanations are equally good, it says so and shows "unknown"
 rather than picking one. [docs/design.md](docs/design.md) has the details.
 
+Where it's going (a vehicle base station, its power, and radio links ranked
+by what they can carry) is in [docs/roadmap.md](docs/roadmap.md).
+
 To add a check, add a rule and a test case.
 
 ## Install (NixOS)

@@ -62,19 +62,27 @@ that's a Google protocol between Android and ChromeOS. What works instead:
 - **Wi-Fi hotspot**: misra tells you when to turn it on (`enable_hotspot`)
   if nothing else is in range.
 
-## Starlink (planned)
+## Starlink and a vehicle base station (planned)
 
-A Starlink dish parked nearby on auxiliary power is a fallback with its own
-health data. Plan:
+Two ways to use a Starlink dish parked nearby on auxiliary power:
 
-1. Add its Wi-Fi as an uplink with `role = "starlink"`. misra then sees it
-   whenever its SSID is in NetworkManager's scan list.
-2. A collector for the dish's local status API (gRPC on `192.168.100.1:9200`,
-   as used by the community `starlink-grpc-tools`). Reachable only once
-   connected. It reports obstruction, outage history and latency, which
-   become facts like `starlink(obstructed)` and `starlink(outage_recent)`.
-3. Rules that rank Starlink below the phone while it's obstructed or still
-   booting.
+- **Directly:** add the Starlink router's Wi-Fi as an uplink with
+  `role = "starlink"`. misra sees it whenever its SSID is in
+  NetworkManager's scan list. Once connected, the dish's local status API
+  (gRPC on `192.168.100.1:9200`, as used by the community
+  `starlink-grpc-tools`) reports obstruction, outages and latency, which
+  become facts like `starlink(obstructed)`.
+- **Behind a vehicle router** (the better setup): the dish on the router's
+  WAN port, cellular as the router's backup, and the laptop connecting to the
+  router's Wi-Fi. The router picks the uplink; misra reads its REST API to see
+  which one is active and how healthy each is. A factory vehicle hotspot, if
+  there is one, can be another `wifi` uplink. It's usually on only with the
+  ignition and has no status API.
+
+Rules then rank Starlink lower while it's obstructed or still booting, and
+the vehicle's power runway ([power-vehicle.md](power-vehicle.md)) says how
+long the base station will last. The full plan, including amateur radio links
+ranked by what they can carry, is in [roadmap.md](roadmap.md).
 
 ## Later: acting, not only advising
 
