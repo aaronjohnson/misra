@@ -19,6 +19,14 @@ happening. Then it:
   the firmware tables and EC readings when a new fault appears, so you can
   compare a broken state with a healthy one after you reboot.
 
+![A misra power alert: the text, then the last two hours of every power sensor as small multiples](docs/img/alert-chart.png)
+
+*A power alert (example data). Under the words, the last two hours on one time
+axis: the heavy line is what misra believes about the charger, the thin lines
+are what each sensor claimed, and the red line marks where the USB-C report
+disagreed with the belief. Then the battery's flow, its charge and its watts.
+The gap is the laptop asleep.*
+
 It is named after the Misra Yantra at Jantar Mantar, the "mixed instrument"
 that combines several instruments in one. It's a companion to
 [jantar](https://github.com/aaronjohnson/jantar).
@@ -75,7 +83,10 @@ journalctl -u misra
 ```
 
 Snapshots go to `/var/lib/misra/snapshots/`, and each check adds a line to
-`/var/lib/misra/history.jsonl`.
+`/var/lib/misra/history.jsonl`, with what each sensor claimed beside what was
+believed. The last four hours of that are also in `/run/misra/series.json`,
+readable by the desktop user, which is what the chart in a power alert is
+drawn from (`misra/chart.py`).
 
 ## Hardware
 

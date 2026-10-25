@@ -89,7 +89,8 @@ in
 
     systemd.user.services.misra-notify = lib.mkIf cfg.notify {
       description = "Show new misra alerts";
-      path = [ pkgs.libnotify ];
+      # the system profile too: makoctl, to draw the alert chart in the cards' light/dark colours
+      path = [ pkgs.libnotify "/run/current-system/sw" ];
       serviceConfig = {
         Type = "oneshot";
         ExecStart = "${lib.getExe cfg.package} notify";

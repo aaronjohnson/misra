@@ -11,7 +11,7 @@ python3Packages.buildPythonApplication {
   };
 
   build-system = [ python3Packages.setuptools ];
-  dependencies = [ python3Packages.clingo ];
+  dependencies = [ python3Packages.clingo python3Packages.pillow ];
   nativeCheckInputs = [ python3Packages.pytestCheckHook ];
 
   meta = {

@@ -7,6 +7,8 @@ clocks catches it too).
 Writes (all paths configurable):
   /run/misra/state.json      what's true right now, for the bar, HUD and jantar
   /run/misra/alerts.json     recent alerts, numbered, for the desktop notifier
+  /run/misra/series.json     the last four hours, tick by tick: what each power sensor
+                             claimed and what was believed, for the charts in alerts
   <state>/history.jsonl      one line per tick
   <state>/snapshots/...      facts + conclusions on every resume and every change
                              of fault; firmware tables and EC dumps on a new fault
@@ -91,6 +93,7 @@ class Misra:
         self.first = True
         self.gap = boot_gap()
         self.alert_seq, self.alert_log = 0, deque(maxlen=30)
+        self.series = deque(maxlen=max(60, 4 * 3600 // max(1, interval)))   # ~4 h of ticks
         self.last_deep = 0
         self.wake = threading.Event()
 
@@ -167,6 +170,7 @@ class Misra:
 
         res = solve(facts)
         state = self.state(now, res, by, obs, raw)
+        self.record(now, reason, state, readings, tc)
         self.act(now, reason, facts, res, state, raw)
         self.was = sorted(str(a) for a in res.certain if a.name != "alert")
         self.first = False
@@ -210,11 +214,27 @@ class Misra:
             "models": res.models, "unsat": res.unsat,
         }
 
+    # ---- The series behind the charts: claims next to beliefs, tick by tick ----
+
+    def record(self, now, reason, state, readings, trend_claim):
+        p = state["power"]
+        claims = {r.sensor: dict(r.claims) for r in readings}
+        if trend_claim:
+            claims["trend"] = {"flow": trend_claim[0]}
+        self.series.append({
+            "t": int(now), "resume": reason.startswith("resume"),
+            "believed": {"ac": p["ac"], "flow": p["flow"], "pct": p["pct"], "w": p["battery_w"]},
+            "claims": claims,
+            "pct": {r.sensor: round(r.pct, 1) for r in readings if r.pct is not None},
+            "faulty": p["faulty"],
+        })
+
     # ---- Acting: state file, alerts, snapshots, history ----
 
     def act(self, now, reason, facts, res, state, raw):
         self.run_dir.mkdir(parents=True, exist_ok=True)
         write_json(self.run_dir / "state.json", state)
+        write_json(self.run_dir / "series.json", {"interval": self.interval, "ticks": list(self.series)})
 
         new = []
         for kind, title, body, urgency in messages.alerts(atoms(res.certain, "alert"), state):
@@ -251,7 +271,9 @@ class Misra:
         line = {"t": state["time"], "why": reason, "pct": p["pct"], "src": p["source"],
                 "ac": p["ac"], "flow": p["flow"], "w": p["battery_w"], "faulty": p["faulty"],
                 "link": l["state"], "sig": l["signal"], "band": l["band"], "mlo": l["mlo_links"],
-                "problems": l["problems"]}
+                "problems": l["problems"],
+                # what each power sensor claimed this tick, next to what was believed above
+                "claims": self.series[-1]["claims"] if self.series else {}}
         f = self.state_dir / "history.jsonl"
         self.state_dir.mkdir(parents=True, exist_ok=True)
         if f.exists() and f.stat().st_size > 32 << 20:

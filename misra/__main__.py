@@ -70,6 +70,29 @@ def main(argv=None):
         Misra(a.state_dir, a.run_dir, a.config, a.interval, use_ec=root).run()
 
 
+POWER_ALERTS = {"power_fault", "power_recovered", "after_resume"}
+
+
+def power_chart(run_dir, alert):
+    """The last two hours as small multiples (chart.py), for the alert's image.
+    Drawn in the notification theme's colours: mako's "light" mode by day."""
+    try:
+        mode = subprocess.run(["makoctl", "mode"], capture_output=True, text=True).stdout
+    except OSError:          # not mako, or not on this service's PATH: the dark palette
+        mode = ""
+    try:
+        from .chart import render
+        series = json.loads((Path(run_dir) / "series.json").read_text())
+        out = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "misra"
+        out.mkdir(parents=True, exist_ok=True)
+        for old in sorted(out.glob("alert-*.png"))[:-10]:   # keep the last few
+            old.unlink(missing_ok=True)
+        return render(series, out / f"alert-{alert['seq']}.png",
+                      mode="light" if "light" in mode.split() else "dark")
+    except (OSError, ValueError, ImportError):
+        return None                                          # the alert still goes out, text only
+
+
 def notify(run_dir):
     """Show alerts newer than the last one shown. Run by a path unit whenever
     alerts.json changes."""
@@ -88,8 +111,11 @@ def notify(run_dir):
     for al in data.get("alerts", []):
         if al["seq"] <= seen:
             continue
-        subprocess.run(["notify-send", "-a", "misra", "-u", al.get("urgency", "normal"),
-                        al["title"], al.get("body", "")], check=False)
+        cmd = ["notify-send", "-a", "misra", "-u", al.get("urgency", "normal")]
+        chart = power_chart(run_dir, al) if al.get("kind") in POWER_ALERTS else None
+        if chart:
+            cmd += ["-i", str(chart)]
+        subprocess.run(cmd + [al["title"], al.get("body", "")], check=False)
         seen = al["seq"]
     seen_file.parent.mkdir(parents=True, exist_ok=True)
     seen_file.write_text(str(seen))

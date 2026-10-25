@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Cross-checks a laptop's sensors with logic rules (clingo)"
 license = "MIT"
 requires-python = ">=3.11"
-dependencies = ["clingo"]
+dependencies = ["clingo", "pillow"]
 
 [project.scripts]
 misra = "misra.__main__:main"

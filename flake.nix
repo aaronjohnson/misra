@@ -17,7 +17,7 @@
 
       devShells = forAll (pkgs: {
         default = pkgs.mkShell {
-          packages = [ (pkgs.python3.withPackages (p: [ p.clingo p.pytest ])) pkgs.clingo ];
+          packages = [ (pkgs.python3.withPackages (p: [ p.clingo p.pillow p.pytest ])) pkgs.clingo ];
         };
       });
 
