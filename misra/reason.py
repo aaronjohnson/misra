@@ -22,6 +22,7 @@ class Result:
     models: int = 0
     cost: list = field(default_factory=list)
     unsat: bool = False
+    optimal: list = field(default_factory=list)   # each optimal model, for `misra explain`
 
 
 def solve(facts, rules_dir=RULES):
@@ -47,4 +48,4 @@ def solve(facts, rules_dir=RULES):
         return Result()
     certain = frozenset.intersection(*models)
     possible = frozenset.union(*models) - certain
-    return Result(certain, possible, len(models), cost)
+    return Result(certain, possible, len(models), cost, optimal=models)

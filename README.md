@@ -52,6 +52,20 @@ like everything that goes through the ACPI firmware, can be blamed together.
 When two explanations are equally good, it says so and shows "unknown"
 rather than picking one. [docs/design.md](docs/design.md) has the details.
 
+`misra explain` draws the reasoning: each sensor's claims beside the answer
+that explains them, what it had to call faulty and why, and, when answers
+tie, all of them side by side.
+
+## Episodes
+
+Each real incident is kept with its evidence and the rules' answer, so the
+claims here can be checked: [docs/incidents/](docs/incidents/).
+
+- **2026-10-17, battery lost after hibernate:** the bar showed 0 % and
+  100 W charging on battery. misra's answer: the firmware broke, the
+  embedded controller is right, 88 % and discharging.
+  [The trace](docs/incidents/2026-10-17-battery-lost-after-hibernate/).
+
 Where it's going (a vehicle base station, its power, and radio links ranked
 by what they can carry) is in [docs/roadmap.md](docs/roadmap.md).
 

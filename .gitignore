@@ -7,3 +7,5 @@ result-*
 *.local.toml
 local.toml
 snapshots/
+# `misra explain` default output (a picture of this machine, now)
+misra-explain.png

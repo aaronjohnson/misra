@@ -5,6 +5,10 @@
   misra solve FILE.lp...       run the rules over fact files
   misra notify                 (as the desktop user) show new alerts
   misra capture [REASON]       save a full snapshot now
+  misra explain [FILE.lp...]   draw how the power rules reached their answer
+                               (from fact files, or a live tick); --show in kitty
+  misra episode SNAPSHOT SLUG  publish a snapshot as an episode in docs/incidents/:
+                               scrubbed facts, the explain picture, a story skeleton
 """
 
 import argparse
@@ -33,7 +37,23 @@ def main(argv=None):
     sub.add_parser("notify")
     c = sub.add_parser("capture")
     c.add_argument("reason", nargs="?", default="manual")
+    e = sub.add_parser("explain")
+    e.add_argument("files", nargs="*", help="fact files; none = a live tick")
+    e.add_argument("--out", default=None, help="PNG to write (default: misra-explain.png here)")
+    e.add_argument("--light", action="store_true", help="light palette")
+    e.add_argument("--show", action="store_true", help="show it in the terminal (kitty)")
+    p = sub.add_parser("episode")
+    p.add_argument("snapshot", help="a snapshot folder (with facts.lp)")
+    p.add_argument("slug", help="short name, e.g. ucsi-stuck-on-after-unplug")
+    p.add_argument("--repo", default=".", help="the misra checkout to write into")
     a = ap.parse_args(argv)
+
+    if a.cmd == "explain":
+        return explain(a)
+    if a.cmd == "episode":
+        from .episode import make
+        print(make(a.snapshot, a.slug, a.repo))
+        return 0
 
     if a.cmd == "solve":
         from .reason import solve
@@ -68,6 +88,25 @@ def main(argv=None):
         return 0
     if a.cmd == "daemon":
         Misra(a.state_dir, a.run_dir, a.config, a.interval, use_ec=root).run()
+
+
+def explain(a):
+    from .explain import render
+    if a.files:
+        facts = [Path(f).read_text() for f in a.files]
+        title = " + ".join(Path(f).name for f in a.files)
+    else:
+        from .daemon import Misra
+        tmp = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "misra-once"
+        facts, _, _ = Misra(state_dir=tmp, run_dir=tmp, config=a.config,
+                            use_ec=os.geteuid() == 0).tick("explain")
+        title = "this machine, now"
+    out = Path(a.out or "misra-explain.png")
+    _, res = render(facts, out, mode="light" if a.light else "dark", title=title)
+    print(out)
+    if a.show:
+        subprocess.run(["kitten", "icat", str(out)], check=False)
+    return 1 if res.unsat else 0
 
 
 POWER_ALERTS = {"power_fault", "power_recovered", "after_resume"}

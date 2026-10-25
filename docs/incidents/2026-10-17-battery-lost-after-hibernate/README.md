@@ -35,6 +35,19 @@ Charged overnight, then unplugged. An hour later the bar and the HUD both showed
   exists; this incident is its first test case
   (`tests/cases/incident-2026-10-17.lp`).
 
+## How misra sees it now
+
+![The evidence and the rules' answer](explain.png)
+
+Given the same evidence ([facts.lp](facts.lp)), the rules find one best
+answer: the charger is off and the battery is present and discharging at
+88 %, on the embedded controller's word. The two ACPI reports are abnormal
+for free, because their firmware methods were seen failing; the USB-C report's
+stale "on" is explained by the same broken firmware (cost 3), cheaper than
+blaming three sensors one by one. The ACPI adapter's "off" happened to be
+right, but a sensor whose method is failing isn't counted as evidence.
+Re-run it: `misra explain facts.lp`.
+
 ## Guesses (not yet tested)
 
 - `RMS` not found *inside* the `_STA` method could mean an ACPI table loaded
@@ -50,7 +63,7 @@ Charged overnight, then unplugged. An hour later the bar and the HUD both showed
 - misra takes a deep snapshot automatically when a new power fault appears
   (`/var/lib/misra/snapshots/*-deep-*`). For a healthy baseline after a
   cold boot, run `sudo misra capture healthy`. Snapshots stay local
-  (see ../privacy.md).
+  (see ../../privacy.md).
 
 ## Similar reports
 
