@@ -3,6 +3,13 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.7.1 · 25 October 2026 · the harbour lights on the chart
+
+A port of call now gets a notice in the harbour too: `misra release-notes`
+turns this log into a GitHub release (the entry's heading for a title, every
+entry since the last tag for the notes), and land offers to publish it as a
+step of its own, since a public notice is the captain's call, not the watch's.
+
 ## 0.7.0 · 25 October 2026 · late, the fan quiet again
 
 Ports of call get a name on the chart. When land carries a new version to the

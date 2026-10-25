@@ -39,3 +39,12 @@ def test_commits_since_the_tag_stay_on_the_tip(tmp_path):
 def test_no_versions_no_tags(tmp_path):
     p = plan(repo(tmp_path, "## Folio VI · 13 October 2026 · the lens reground\n"))
     assert (p["mode"], p["plan"], p["tag"]) == ("tip", "tip", None)
+
+
+def test_notes_cover_everything_since_the_previous_tag(tmp_path):
+    from misra.release import notes
+    log = "# Log\n\n## 0.7.0 · late\n\nseven\n\n## 0.6.0 · night\n\nsix\n\n## 0.2.0 · first\n\ntwo\n"
+    r = repo(tmp_path, log, tags=["v0.2.0"], tag_head=["v0.7.0"])
+    title, body = notes(r, "v0.7.0")
+    assert title == "0.7.0 · late"
+    assert "seven" in body and "six" in body and "two" not in body

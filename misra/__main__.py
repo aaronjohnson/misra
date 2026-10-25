@@ -10,6 +10,8 @@
                                stdin; ask or deny a risky shell command (rules/commands)
   misra release-plan REPO      tag a release or stay on the branch tip, for land's Bump
                                step (rules/release; the CHANGELOG's newest version)
+  misra release-notes REPO TAG  a GitHub release's title (first line) and notes: the
+                               CHANGELOG entries since the previous tag
   misra weather [OUT]          save the current weather for the sky rules (the
                                misra-weather unit runs it; the daemon has no network);
                                location from --location FILE or the unit's credential
@@ -47,6 +49,9 @@ def main(argv=None):
     sub.add_parser("check-command")
     rp = sub.add_parser("release-plan")
     rp.add_argument("repo")
+    rn = sub.add_parser("release-notes")
+    rn.add_argument("repo")
+    rn.add_argument("tag")
     ll = sub.add_parser("land-log")
     ll.add_argument("file", help="entry(N, State, Kind, Repo) facts from the deck")
     w = sub.add_parser("weather")
@@ -91,6 +96,12 @@ def main(argv=None):
     if a.cmd == "release-plan":
         from .release import main as release_main
         return release_main(a.repo)
+    if a.cmd == "release-notes":
+        from .release import notes
+        title, body = notes(a.repo, a.tag)
+        print(title)
+        print(body, end="")
+        return 0
     if a.cmd == "land-log":
         from .land import main as land_main
         return land_main(a.file)
