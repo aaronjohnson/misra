@@ -3,6 +3,12 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, nothing for running repairs.
 
+## 0.2.1 · 25 October 2026 · still raining
+
+The barometer's sailor no longer reports for duty, and fails, before the
+captain has written down where we are: without a location the weather unit
+now stands down quietly.
+
 ## 0.2.0 · 25 October 2026 · Vancouver WA, overcast, light rain, 0.6 mm
 
 Fitted a barometer. `rules/sky.lp` reads the weather and calls a grey day:

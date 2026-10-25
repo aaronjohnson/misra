@@ -100,6 +100,8 @@ in
       description = "misra: save the local weather for the sky rules";
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
+      # No location yet (ops/weather-location writes it): skip quietly, don't fail.
+      unitConfig.ConditionPathExists = cfg.weather.locationFile;
       serviceConfig = {
         Type = "oneshot";
         ExecStart = "${lib.getExe cfg.package} weather /run/misra-weather/now.json";
