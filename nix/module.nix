@@ -106,7 +106,10 @@ in
         Type = "oneshot";
         ExecStart = "${lib.getExe cfg.package} weather /run/misra-weather/now.json";
         LoadCredential = "location:${cfg.weather.locationFile}";
-        DynamicUser = true;
+        # A fixed system user, not DynamicUser: DynamicUser hides its directory behind
+        # /run/private (0700), where the daemon, root with no capabilities, can't read it.
+        User = "misra-weather";
+        Group = "misra-weather";
         RuntimeDirectory = "misra-weather";
         RuntimeDirectoryMode = "0755";
         RuntimeDirectoryPreserve = true;   # keep the last reading between runs
@@ -130,6 +133,13 @@ in
         Nice = 10;
       };
     };
+    users.users.misra-weather = lib.mkIf cfg.weather.enable {
+      isSystemUser = true;
+      group = "misra-weather";
+      description = "misra: fetches the weather";
+    };
+    users.groups.misra-weather = lib.mkIf cfg.weather.enable { };
+
     systemd.timers.misra-weather = lib.mkIf cfg.weather.enable {
       description = "Fetch the weather for misra every 15 minutes";
       wantedBy = [ "timers.target" ];

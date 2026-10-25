@@ -1,7 +1,16 @@
 # Ship's log of the misra
 
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
-number when a new set of rules comes aboard, nothing for running repairs.
+number when a new set of rules comes aboard, a patch for running repairs.
+
+## 0.2.2 · 25 October 2026 · moderate rain, 0.9 mm, the lamps still lit
+
+The barometer read 100 % cloud and rain, and nobody on the bridge heard it:
+the sailor kept his readings in a locked locker (`/run/private`, where a
+throwaway crewman's things go) that even the watch, sworn off all its
+privileges, couldn't open. He now has a name on the crew list
+(`misra-weather`, a plain system user) and pins his readings where the watch
+can see them. Still no shore leave for the watch itself.
 
 ## 0.2.1 · 25 October 2026 · still raining
 

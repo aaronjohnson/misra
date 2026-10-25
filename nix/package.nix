@@ -2,7 +2,7 @@
 
 python3Packages.buildPythonApplication {
   pname = "misra";
-  version = "0.2.1";
+  version = "0.2.2";
   pyproject = true;
 
   src = lib.fileset.toSource {
