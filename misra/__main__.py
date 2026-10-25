@@ -6,6 +6,8 @@
   misra notify                 (as the desktop user) show new alerts
   misra land-log FILE.lp       what the F12 deck's log adds up to (rules/land): fixed
                                and open failures, blame, a verdict, as JSON
+  misra check-command          (Claude Code's PreToolUse hook) read the hook's JSON on
+                               stdin; ask or deny a risky shell command (rules/commands)
   misra weather [OUT]          save the current weather for the sky rules (the
                                misra-weather unit runs it; the daemon has no network);
                                location from --location FILE or the unit's credential
@@ -40,6 +42,7 @@ def main(argv=None):
     s = sub.add_parser("solve")
     s.add_argument("files", nargs="+")
     sub.add_parser("notify")
+    sub.add_parser("check-command")
     ll = sub.add_parser("land-log")
     ll.add_argument("file", help="entry(N, State, Kind, Repo) facts from the deck")
     w = sub.add_parser("weather")
@@ -78,6 +81,9 @@ def main(argv=None):
 
     if a.cmd == "notify":
         return notify(a.run_dir)
+    if a.cmd == "check-command":
+        from .commands import main as check_main
+        return check_main(sys.stdin)
     if a.cmd == "land-log":
         from .facts import atoms
         from .reason import RULES, solve

@@ -3,6 +3,22 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.4.0 · 25 October 2026 · clearing, the evening watch
+
+A boarding officer at the gangway. Before Claude Code runs a shell command,
+`misra check-command` reads it and `rules/commands/` decides whether you
+should be asked first: anything from a registry or a URL (npm, npx, pip,
+cargo, go, gem, mix archives, flakes from outside nixpkgs, nix profiles),
+outside code cloned under ~ (which Claude Code trusts), and writes to where a
+stowaway hides: ~/.ssh, shell startup files, autostart, Claude's own hooks.
+A download piped straight into a shell isn't asked about; it's refused.
+
+The officer may only stop a passenger, never wave one through: with no
+concern the officer says nothing and the usual prompts stand. Python reads the
+command (heredocs are cargo, not crew; `bash -c`, `sudo`, `nix shell -c` are
+looked inside); clingo decides, and every refusal says why. Its tests include
+the very commands of the day it was built, which it must let pass.
+
 ## 0.3.0 · 25 October 2026 · rain easing, a long afternoon in the log
 
 The watch now reads its own log. `rules/land/` takes the F12 deck's record of
