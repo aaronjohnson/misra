@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# weather-location: tell the misra-weather unit where to read the sky, without the place
+# entering any repo. Writes /var/lib/misra/weather.toml (root-only); the unit gets it as a
+# systemd credential, and only the two coordinates, rounded to two decimals, leave the machine.
+#
+#     pkexec ops/weather-location 45.64 -122.66     set it (city-level is enough)
+#     pkexec ops/weather-location                   show what's set
+#
+# Safe to re-run: it overwrites the file and fetches once so the bar sees it straight away.
+set -eu
+f=/var/lib/misra/weather.toml
+[[ $EUID == 0 ]] || { echo "run with pkexec: pkexec $0 ${*:-}"; exit 1; }
+if [[ $# == 0 ]]; then cat "$f" 2>/dev/null || echo "not set: $f"; exit 0; fi
+[[ $# == 2 ]] || { echo "usage: $0 LATITUDE LONGITUDE"; exit 2; }
+lat=$(printf '%.2f' "$1"); lon=$(printf '%.2f' "$2")
+install -d -m 0750 /var/lib/misra
+umask 077
+printf 'latitude = %s\nlongitude = %s\n' "$lat" "$lon" > "$f"
+echo "wrote $f: $lat, $lon"
+systemctl start misra-weather.service 2>/dev/null && echo "fetched: $(head -c 160 /run/misra-weather/now.json)" \
+  || echo "misra-weather isn't installed yet (services.misra.weather.enable); it'll read this when it is."

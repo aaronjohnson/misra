@@ -7,6 +7,7 @@ clocks catches it too).
 Writes (all paths configurable):
   /run/misra/state.json      what's true right now, for the bar, HUD and jantar
   /run/misra/alerts.json     recent alerts, numbered, for the desktop notifier
+  /run/misra/state.json  .sky  is it a grey day (rules/sky.lp), for the bar's theme
   /run/misra/series.json     the last four hours, tick by tick: what each power sensor
                              claimed and what was believed, for the charts in alerts
   <state>/history.jsonl      one line per tick
@@ -27,7 +28,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import messages
-from .collect import ec, journal, links, power
+from .collect import ec, journal, links, power, weather
 from .facts import atoms, fact
 from .reason import solve
 
@@ -82,8 +83,9 @@ class Trend:
 
 class Misra:
     def __init__(self, state_dir="/var/lib/misra", run_dir="/run/misra",
-                 config=None, interval=30, use_ec=True):
+                 config=None, interval=30, use_ec=True, weather_file=weather.FILE):
         self.state_dir, self.run_dir = Path(state_dir), Path(run_dir)
+        self.weather_file, self.weather = weather_file, None
         self.interval, self.use_ec = interval, use_ec
         self.journal = journal.Journal()
         self.links = links.Links(uplinks=load_uplinks(config))
@@ -163,6 +165,10 @@ class Misra:
         facts += [fact("visible", l) for l in obs["visible"]]
         facts += [fact("event", k, a, n) for n, (k, a) in enumerate(self.journal.event_facts(now))]
 
+        # Weather (saved by the misra-weather unit; the daemon has no network)
+        wfacts, self.weather = weather.collect(now, self.weather_file)
+        facts += wfacts
+
         # Memory of last tick, for edge-triggered alerts
         facts += [f"was({a})." for a in self.was]
         if self.first:
@@ -208,6 +214,13 @@ class Misra:
                 "signal": obs.get("signal"), "band": obs.get("band"),
                 "mlo_links": obs.get("mlo_links"), "internet": obs.get("internet"),
                 "active": obs.get("active"), "visible": obs.get("visible"),
+            },
+            "sky": {
+                "gloomy": bool(atoms(c, "gloomy")),
+                "why": [w for (w,) in atoms(c, "grey")],
+                "fetched": self.weather.get("fetched") if self.weather else None,
+                "cloud": self.weather.get("cloud_cover") if self.weather else None,
+                "code": self.weather.get("weather_code") if self.weather else None,
             },
             "resume": {"time": self.journal.last_resume[0], "kind": self.journal.last_resume[1]}
                       if self.journal.last_resume else None,

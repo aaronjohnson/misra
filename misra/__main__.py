@@ -4,6 +4,9 @@
   misra once [--facts]         one tick, printed (no root: the EC is skipped)
   misra solve FILE.lp...       run the rules over fact files
   misra notify                 (as the desktop user) show new alerts
+  misra weather [OUT]          save the current weather for the sky rules (the
+                               misra-weather unit runs it; the daemon has no network);
+                               location from --location FILE or the unit's credential
   misra capture [REASON]       save a full snapshot now
   misra explain [FILE.lp...]   draw how the power rules reached their answer
                                (from fact files, or a live tick); --show in kitty
@@ -35,6 +38,9 @@ def main(argv=None):
     s = sub.add_parser("solve")
     s.add_argument("files", nargs="+")
     sub.add_parser("notify")
+    w = sub.add_parser("weather")
+    w.add_argument("out", nargs="?", default=None)
+    w.add_argument("--location", help="TOML with latitude and longitude")
     c = sub.add_parser("capture")
     c.add_argument("reason", nargs="?", default="manual")
     e = sub.add_parser("explain")
@@ -68,6 +74,11 @@ def main(argv=None):
 
     if a.cmd == "notify":
         return notify(a.run_dir)
+    if a.cmd == "weather":
+        from .collect import weather
+        lat, lon = weather.location(a.location)
+        print(json.dumps(weather.fetch(lat, lon, a.out or weather.FILE)))
+        return 0
 
     from .daemon import Misra, deep_capture
     root = os.geteuid() == 0

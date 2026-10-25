@@ -154,3 +154,38 @@ def test_simultaneous_faults_make_one_notification():
     assert [o[0] for o in out] == ["power_fault", "after_resume"]
     assert "firmware" in out[0][1] or "firmware" in out[0][2]
     assert "88%" in out[0][2]
+
+
+# ---- sky.lp: grey days ----
+
+def sky(*facts):
+    c, _ = certain(*facts)
+    return "gloomy" in c, sorted(a[5:-1] for a in c if a.startswith("grey("))
+
+
+def test_rain_is_gloomy():
+    # 2026-10-25, Vancouver WA at noon: light rain, full cloud
+    assert sky("weather_age(60). cloud(100). rain(6). wmo(61). radiation(116). daylight.") == (True, ["overcast", "rain"])
+
+
+def test_clear_day_is_not():
+    assert sky("weather_age(60). cloud(10). rain(0). wmo(1). radiation(420). daylight.") == (False, [])
+
+
+def test_thin_overcast_is_not():
+    # cloudy but bright enough to light the room
+    assert sky("weather_age(60). cloud(95). rain(0). wmo(3). radiation(240). daylight.") == (False, [])
+
+
+def test_stale_weather_says_nothing():
+    assert sky("weather_age(7200). cloud(100). rain(20). wmo(63). radiation(50). daylight.") == (False, [])
+
+
+def test_gap_in_the_clouds_keeps_it_grey():
+    gap = "weather_age(60). cloud(80). rain(0). wmo(2). radiation(200). daylight."
+    assert sky(gap, "was(gloomy).") == (True, ["lingering"])
+    assert sky(gap) == (False, [])
+
+
+def test_sun_breaks_through():
+    assert sky("weather_age(60). cloud(80). rain(0). wmo(2). radiation(350). daylight.", "was(gloomy).") == (False, [])
