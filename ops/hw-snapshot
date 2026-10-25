@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# hw-snapshot: record the laptop's hardware state while something is broken, before a reboot
+# clears it. The journal survives a reboot; live sysfs state (USB-C ports, display connectors,
+# lid, power supplies) does not.
+#
+#     ops/hw-snapshot [label]          as yourself: everything readable without root
+#     pkexec ops/hw-snapshot --tables  as root: adds the ACPI tables (DSDT/SSDTs) to the newest snapshot
+#
+# Snapshots go to ~/.local/state/misra/incidents/<UTC time>-<label>/, outside the repo: they hold
+# serial numbers and device IDs, and this repo is public. Safe to re-run; each run is a new folder.
+set -u
+base="${MISRA_INCIDENTS:-$HOME/.local/state/misra/incidents}"
+
+if [[ "${1:-}" == --tables ]]; then   # root: the firmware's ACPI tables, to read _LID / UCSI _DSM
+  [[ $EUID == 0 ]] || { echo "run with pkexec: pkexec $0 --tables"; exit 1; }
+  user_home=$(getent passwd "${PKEXEC_UID:-1000}" | cut -d: -f6)
+  dir=$(ls -d "${MISRA_INCIDENTS:-$user_home/.local/state/misra/incidents}"/*/ | tail -1)
+  mkdir -p "$dir/acpi"
+  cp /sys/firmware/acpi/tables/{DSDT,SSDT*} "$dir/acpi/" 2>/dev/null
+  cp -r /sys/kernel/debug/usb/ucsi "$dir/acpi/ucsi-debugfs" 2>/dev/null
+  chown -R "${PKEXEC_UID:-1000}" "$dir/acpi"
+  echo "ACPI tables saved to $dir/acpi"; exit 0
+fi
+
+dir="$base/$(date -u +%Y%m%dT%H%M%SZ)-${1:-snapshot}"
+mkdir -p "$dir"
+run() { local out="$dir/$1"; shift; { echo "\$ $*"; "$@"; } > "$out" 2>&1; }
+# every readable attribute under a sysfs class, as path = value
+dump() { find -L "$1" -maxdepth "${2:-3}" -type f -readable ! -name uevent_* 2>/dev/null |
+         grep -vE '/(power|subsystem|driver|firmware_node)/' | sort |
+         while read -r f; do printf '%s = %s\n' "$f" "$(head -c 300 "$f" 2>/dev/null | tr '\n' ' ')"; done; }
+
+run system.txt     bash -c 'uname -a; cat /proc/cmdline; uptime; for k in sys_vendor product_name product_version bios_version bios_date ec_firmware_release; do printf "%s: %s\n" $k "$(cat /sys/class/dmi/id/$k 2>/dev/null)"; done'
+run boots.txt      journalctl --list-boots --no-pager
+run kernel.log     journalctl -k -b --no-pager
+run sleep.log      bash -c 'journalctl -b --no-pager | grep -iE "suspend|hibernat|resume|PM: |sleep operation|Lid|dock"'
+run acpi-errors.txt bash -c 'journalctl -k -b --no-pager | grep -E "ACPI (BIOS )?Error" | sed -E "s/^.*kernel: //" | sort | uniq -c | sort -rn'
+run first-errors.txt bash -c 'journalctl -k -b --no-pager | grep -E "ACPI (BIOS )?Error|ucsi|typec" | awk "!seen[\$0 ~ /ucsi/ ? \"ucsi\" : \$NF]++"'
+run lid.txt        bash -c 'cat /proc/acpi/button/lid/*/state; for p in LidClosed Docked; do printf "logind %s: " $p; busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager $p; done'
+run typec.txt      dump /sys/class/typec 3
+run usb-pd.txt     dump /sys/class/usb_power_delivery 3
+run drm.txt        bash -c 'for c in /sys/class/drm/card*-*; do echo "$(basename $c) status=$(cat $c/status) enabled=$(cat $c/enabled) dpms=$(cat $c/dpms)"; done'
+run usb.txt        bash -c 'for d in /sys/bus/usb/devices/*; do [ -f $d/idVendor ] && echo "$(basename $d) $(cat $d/idVendor):$(cat $d/idProduct) speed=$(cat $d/speed) $(cat $d/manufacturer 2>/dev/null) / $(cat $d/product 2>/dev/null)"; done'
+run thunderbolt.txt dump /sys/bus/thunderbolt/devices 2
+run power.txt      bash -c 'for s in /sys/class/power_supply/*; do echo "== $s"; cat $s/uevent; done'
+run modules.txt    bash -c 'lsmod | grep -E "ucsi|typec|thunderbolt|intel_pmc|xe|i915|button|cros"'
+run hyprland.txt   bash -c 'hyprctl monitors all; hyprctl devices'
+run misra.json     cat /run/misra/state.json
+echo "Saved to $dir"
+echo "For the ACPI tables too: pkexec $0 --tables"
