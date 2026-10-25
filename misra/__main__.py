@@ -85,18 +85,8 @@ def main(argv=None):
         from .commands import main as check_main
         return check_main(sys.stdin)
     if a.cmd == "land-log":
-        from .facts import atoms
-        from .reason import RULES, solve
-        res = solve([Path(a.file).read_text()], RULES / "land")
-        c = res.certain
-        print(json.dumps({
-            "verdict": next((v for (v,) in atoms(c, "verdict")), None),
-            "failures": next((n for (n,) in atoms(c, "failures")), 0),
-            "open": sorted(n for (n,) in atoms(c, "open")),
-            "fixed": {str(n): m for n, m in atoms(c, "first_fix")},
-            "blame": {str(n): r for n, r in atoms(c, "blame")},
-        }))
-        return 1 if res.unsat else 0
+        from .land import main as land_main
+        return land_main(a.file)
     if a.cmd == "weather":
         from .collect import weather
         lat, lon = weather.location(a.location)

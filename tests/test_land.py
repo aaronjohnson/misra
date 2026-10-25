@@ -53,3 +53,46 @@ def test_a_push_is_fixed_only_by_a_push_of_the_same_repo():
 def test_info_rows_count_for_nothing():
     c = conclude('entry(0,info,system,"system"). entry(1,info,check,"system").')
     assert {"verdict(clear)", "failures(0)"} <= c
+
+
+# ---- "command not found" ----
+
+from misra.land import conclude as land_conclude
+
+
+def repo(home, name, flake=None, ship=None):
+    d = home / "src" / name
+    (d / ".git").mkdir(parents=True)
+    if flake is not None:
+        (d / "flake.nix").write_text(flake)
+    if ship is not None:
+        (d / ".ship").write_text(ship)
+
+
+SHIP_FAILED = 'entry(0,bad,ship,"karkhana"). missing(0,"firebase").'
+
+
+def test_karkhana_2026_10_25_add_it_to_the_shell(tmp_path):
+    # what actually happened: the devShell had python and pandoc, not firebase-tools
+    repo(tmp_path, "karkhana", flake="packages = [ pkgs.python3 pkgs.pandoc ];",
+         ship="site | nix develop -c python3 build.py && firebase deploy")
+    out, _ = land_conclude(SHIP_FAILED, tmp_path)
+    assert out["advice"] == {"0": "add firebase-tools to karkhana's flake devShell"}
+
+
+def test_shell_has_it_so_run_inside(tmp_path):
+    repo(tmp_path, "karkhana", flake="packages = [ pkgs.firebase-tools ];", ship="site | firebase deploy")
+    out, _ = land_conclude(SHIP_FAILED, tmp_path)
+    assert "run the step inside it" in out["advice"]["0"]
+
+
+def test_no_flake(tmp_path):
+    repo(tmp_path, "karkhana")
+    out, _ = land_conclude(SHIP_FAILED, tmp_path)
+    assert out["advice"]["0"].startswith("karkhana has no flake")
+
+
+def test_fixed_needs_no_advice(tmp_path):
+    repo(tmp_path, "karkhana", flake="packages = [ ];")
+    out, _ = land_conclude(SHIP_FAILED + ' entry(1,ok,ship,"karkhana").', tmp_path)
+    assert out["advice"] == {} and out["verdict"] == "clear"

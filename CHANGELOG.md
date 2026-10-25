@@ -3,6 +3,16 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.5.0 · 25 October 2026 · night watch, clear
+
+When the log says a tool was missing ("firebase: command not found", which
+is how three of the afternoon's deploys went), the watch now says how to
+fit it rather than only that it was lost overboard: add the package to that
+repo's devShell, run the step inside the devShell that already has it, or
+give a repo with no flake one. It checks the repo's own flake and .ship on
+disk to know which. Every answer is a rule in `rules/land/`, tested on the
+afternoon it came from.
+
 ## 0.4.0 · 25 October 2026 · clearing, the evening watch
 
 A boarding officer at the gangway. Before Claude Code runs a shell command,

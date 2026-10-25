@@ -48,3 +48,24 @@ verdict(open)   :- open_count(O), O > 0.
 #show failures/1.
 #show open_count/1.
 #show verdict/1.
+
+% ---- "command not found": how to fix it ----
+% Extra input (the deck and misra/land.py):
+%   missing(N, Cmd).        row N's output said Cmd: command not found
+%   has_flake(Repo).  shell_has(Repo, Cmd).  ship_in_shell(Repo).
+%   provides(Cmd, Package).
+% Only for failures still open; a later success makes the advice moot.
+
+missing_in(N,C,R) :- missing(N,C), entry(N,_,_,R), open(N).
+
+% The devShell lacks it: add it there (it's how karkhana broke on 2026-10-25,
+% when the global firebase-tools left the system).
+advise(N,add_to_shell,R,P) :- missing_in(N,C,R), has_flake(R), not shell_has(R,C), provides(C,P).
+% The devShell has it, so the step ran outside the shell.
+advise(N,run_in_shell,R,P) :- missing_in(N,C,R), shell_has(R,C), provides(C,P).
+% No flake at all.
+advise(N,add_flake,R,P)    :- missing_in(N,C,R), R != "system", not has_flake(R), provides(C,P).
+% Not about a repo: a one-off nix shell.
+advise(N,nix_shell,R,P)    :- missing_in(N,C,R), R = "system", provides(C,P).
+
+#show advise/4.
