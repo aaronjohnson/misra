@@ -4,6 +4,8 @@
   misra once [--facts]         one tick, printed (no root: the EC is skipped)
   misra solve FILE.lp...       run the rules over fact files
   misra notify                 (as the desktop user) show new alerts
+  misra land-log FILE.lp       what the F12 deck's log adds up to (rules/land): fixed
+                               and open failures, blame, a verdict, as JSON
   misra weather [OUT]          save the current weather for the sky rules (the
                                misra-weather unit runs it; the daemon has no network);
                                location from --location FILE or the unit's credential
@@ -38,6 +40,8 @@ def main(argv=None):
     s = sub.add_parser("solve")
     s.add_argument("files", nargs="+")
     sub.add_parser("notify")
+    ll = sub.add_parser("land-log")
+    ll.add_argument("file", help="entry(N, State, Kind, Repo) facts from the deck")
     w = sub.add_parser("weather")
     w.add_argument("out", nargs="?", default=None)
     w.add_argument("--location", help="TOML with latitude and longitude")
@@ -74,6 +78,19 @@ def main(argv=None):
 
     if a.cmd == "notify":
         return notify(a.run_dir)
+    if a.cmd == "land-log":
+        from .facts import atoms
+        from .reason import RULES, solve
+        res = solve([Path(a.file).read_text()], RULES / "land")
+        c = res.certain
+        print(json.dumps({
+            "verdict": next((v for (v,) in atoms(c, "verdict")), None),
+            "failures": next((n for (n,) in atoms(c, "failures")), 0),
+            "open": sorted(n for (n,) in atoms(c, "open")),
+            "fixed": {str(n): m for n, m in atoms(c, "first_fix")},
+            "blame": {str(n): r for n, r in atoms(c, "blame")},
+        }))
+        return 1 if res.unsat else 0
     if a.cmd == "weather":
         from .collect import weather
         lat, lon = weather.location(a.location)

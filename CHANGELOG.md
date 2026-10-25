@@ -3,6 +3,17 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.3.0 · 25 October 2026 · rain easing, a long afternoon in the log
+
+The watch now reads its own log. `rules/land/` takes the F12 deck's record of
+the day (each commit, bump, push, switch and check, and whether it held) and
+says what it adds up to: which failures a later success has fixed, which are
+still open, the change most likely to blame, and one verdict for the page.
+Its first case is this afternoon: a switch failed for want of a position, a
+build failed for a colon on the crew list, and three bumps later the log reads
+"all clear: 3 failed, all fixed". `misra land-log FILE` answers as JSON; the
+daemon doesn't load these rules.
+
 ## 0.2.3 · 25 October 2026 · rain easing
 
 The sailor's name went on the crew list with a colon in it ("misra: fetches

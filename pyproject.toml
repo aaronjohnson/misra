@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "misra"
-version = "0.2.3"
+version = "0.3.0"
 description = "Cross-checks a laptop's sensors with logic rules (clingo)"
 license = "MIT"
 requires-python = ">=3.11"
@@ -17,4 +17,4 @@ misra = "misra.__main__:main"
 packages = ["misra", "misra.collect"]
 
 [tool.setuptools.package-data]
-misra = ["rules/*.lp"]
+misra = ["rules/*.lp", "rules/*/*.lp"]
