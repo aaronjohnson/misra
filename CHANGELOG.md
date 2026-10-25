@@ -3,6 +3,12 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.2.3 · 25 October 2026 · rain easing
+
+The sailor's name went on the crew list with a colon in it ("misra: fetches
+the weather"), and the crew list is a passwd file, where a colon splits the
+fields. The ship wouldn't build until the clerk wrote "misra weather fetcher".
+
 ## 0.2.2 · 25 October 2026 · moderate rain, 0.9 mm, the lamps still lit
 
 The barometer read 100 % cloud and rain, and nobody on the bridge heard it:

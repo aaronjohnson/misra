@@ -136,7 +136,7 @@ in
     users.users.misra-weather = lib.mkIf cfg.weather.enable {
       isSystemUser = true;
       group = "misra-weather";
-      description = "misra: fetches the weather";
+      description = "misra weather fetcher";   # no colons: it's a passwd field
     };
     users.groups.misra-weather = lib.mkIf cfg.weather.enable { };
 
