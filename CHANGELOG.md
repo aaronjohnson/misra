@@ -3,6 +3,28 @@
 Kept by the watch. Newest entry on top. A version is a port of call: a minor
 number when a new set of rules comes aboard, a patch for running repairs.
 
+## 0.7.0 · 25 October 2026 · late, the fan quiet again
+
+Ports of call get a name on the chart. When land carries a new version to the
+system, `rules/release/` reads this log's newest heading and decides: a new
+version is tagged where it lies (signed, pushed) and the system's flake points
+at the tag, not the moving tip of the branch; a version already tagged here
+is taken as it is; and if commits came after the tag without a new heading,
+the tag stays put (a checkpoint isn't moved) and the system takes the tip,
+saying why. Repos whose logs keep folios or field reports instead of version
+numbers stay on their tips. Several machines can then sail on the same
+release, and going back is pointing at an earlier one.
+
+## 0.6.0 · 25 October 2026 · still night, the watch writes the last line
+
+"Nothing left to land or ship" used to be painted on the bulkhead. Now the
+watch says it, and says more: how many steps held today, that the running
+system matches the charts, which repos have work below decks that landing
+won't touch, which are behind the remote, which drafts went stale, and which
+steps were waved off this time. `rules/land/queue.lp` reads the deck's queue
+alongside its log; a question still up, or a step still running, means the
+watch keeps quiet and lets the deck ask.
+
 ## 0.5.0 · 25 October 2026 · night watch, clear
 
 When the log says a tool was missing ("firebase: command not found", which

@@ -1,8 +1,8 @@
-{ lib, python3Packages }:
+{ lib, python3Packages, git }:
 
 python3Packages.buildPythonApplication {
   pname = "misra";
-  version = "0.5.0";
+  version = "0.7.0";
   pyproject = true;
 
   src = lib.fileset.toSource {
@@ -12,7 +12,7 @@ python3Packages.buildPythonApplication {
 
   build-system = [ python3Packages.setuptools ];
   dependencies = [ python3Packages.clingo python3Packages.pillow ];
-  nativeCheckInputs = [ python3Packages.pytestCheckHook ];
+  nativeCheckInputs = [ python3Packages.pytestCheckHook git ];   # git: test_release makes throwaway repos
 
   meta = {
     description = "Cross-checks a laptop's sensors with logic rules";

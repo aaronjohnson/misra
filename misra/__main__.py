@@ -8,6 +8,8 @@
                                and open failures, blame, a verdict, as JSON
   misra check-command          (Claude Code's PreToolUse hook) read the hook's JSON on
                                stdin; ask or deny a risky shell command (rules/commands)
+  misra release-plan REPO      tag a release or stay on the branch tip, for land's Bump
+                               step (rules/release; the CHANGELOG's newest version)
   misra weather [OUT]          save the current weather for the sky rules (the
                                misra-weather unit runs it; the daemon has no network);
                                location from --location FILE or the unit's credential
@@ -43,6 +45,8 @@ def main(argv=None):
     s.add_argument("files", nargs="+")
     sub.add_parser("notify")
     sub.add_parser("check-command")
+    rp = sub.add_parser("release-plan")
+    rp.add_argument("repo")
     ll = sub.add_parser("land-log")
     ll.add_argument("file", help="entry(N, State, Kind, Repo) facts from the deck")
     w = sub.add_parser("weather")
@@ -84,6 +88,9 @@ def main(argv=None):
     if a.cmd == "check-command":
         from .commands import main as check_main
         return check_main(sys.stdin)
+    if a.cmd == "release-plan":
+        from .release import main as release_main
+        return release_main(a.repo)
     if a.cmd == "land-log":
         from .land import main as land_main
         return land_main(a.file)

@@ -77,7 +77,40 @@ def conclude(text, home=None):
         "fixed": {str(n): m for n, m in atoms(c, "first_fix")},
         "blame": {str(n): r for n, r in atoms(c, "blame")},
         "advice": {str(n): say(kind, repo, pkg) for n, kind, repo, pkg in atoms(c, "advise")},
+        "status": next((s for (s,) in atoms(c, "status")), None),
+        "headline": headline(c),
     }, res.unsat
+
+
+def headline(c):
+    """The deck's line when no question is up: rules/land/queue.lp's status and notes."""
+    status = next((s for (s,) in atoms(c, "status")), None)
+    done = next((d for (d,) in atoms(c, "done")), 0)
+    tail = []
+    if done:
+        tail.append(f"{done} step{'s' if done != 1 else ''} done")
+    if any(True for _ in atoms(c, "note", 1)):
+        tail.append("running = ~/nixos")
+    unstaged = [f"{r} ({n})" for k, r, n in atoms(c, "note", 3) if k == "unstaged"]
+    behind = [f"{r} ↓{n}" for k, r, n in atoms(c, "note", 3) if k == "behind"]
+    stale = [r for k, r in atoms(c, "note", 2) if k == "stale_draft"]
+    if unstaged:
+        tail.append("unstaged, not part of land: " + ", ".join(unstaged))
+    if behind:
+        tail.append("behind the remote: " + ", ".join(behind))
+    if stale:
+        tail.append("stale draft: " + ", ".join(stale))
+    skipped = [f"{label} {repo}" for _, label, repo in atoms(c, "skipped", 3)]
+    head = {
+        "clear": "Nothing left to land or ship",
+        "skipped_only": "Nothing queued; skipped this time: " + ", ".join(skipped),
+        "broken": "Nothing queued, but ~/nixos doesn't build",
+        "checking": "Checking whether a switch is needed…",
+        "reading": "Reading repos…",
+    }.get(status)
+    if head is None:
+        return None                      # running or a question is up: the deck says that
+    return " · ".join([head] + tail)
 
 
 def say(kind, repo, pkg):

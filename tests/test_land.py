@@ -96,3 +96,30 @@ def test_fixed_needs_no_advice(tmp_path):
     repo(tmp_path, "karkhana", flake="packages = [ ];")
     out, _ = land_conclude(SHIP_FAILED + ' entry(1,ok,ship,"karkhana").', tmp_path)
     assert out["advice"] == {} and out["verdict"] == "clear"
+
+
+# ---- queue.lp: the deck's line when no question is up ----
+
+def headline(facts, tmp_path):
+    out, _ = land_conclude(facts, tmp_path)
+    return out["status"], out["headline"]
+
+
+def test_clear_after_a_full_run(tmp_path):
+    s, h = headline("""entry(0,ok,commit,"misra"). entry(1,ok,bump,"misra"). entry(2,ok,switch,"system").
+                       entry(3,info,check,"system"). switch(same). dirty("dotfiles",1).""", tmp_path)
+    assert s == "clear"
+    assert h == "Nothing left to land or ship · 3 steps done · running = ~/nixos · unstaged, not part of land: dotfiles (1)"
+
+
+def test_a_question_up_means_no_headline(tmp_path):
+    assert headline('queued(0,"Push","misra"). switch(same).', tmp_path) == ("next", None)
+
+
+def test_skipped_steps_are_named(tmp_path):
+    s, h = headline('skipped(0,"Ship hosting","puzzles-site"). switch(same).', tmp_path)
+    assert s == "skipped_only" and "Ship hosting puzzles-site" in h
+
+
+def test_broken_system_outranks_clear(tmp_path):
+    assert headline("switch(broken).", tmp_path)[0] == "broken"
